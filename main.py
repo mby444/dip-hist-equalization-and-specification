@@ -2,6 +2,7 @@ import cv2
 import matplotlib.pyplot as plt
 from skimage import exposure
 import numpy as np
+import os
 
 def plot_image_and_hist(image, title, ax_img, ax_hist):
     """Fungsi pembantu untuk menampilkan citra dan histogramnya pada subplot"""
@@ -52,6 +53,14 @@ def match_histogram_library(source_image, target_image):
     return matched.astype('uint8')
 
 def main():
+    # ==========================================
+    # Persiapan Folder Output
+    # ==========================================
+    output_dir = "output"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print(f"Folder '{output_dir}' berhasil dibuat.")
+
     # 1. Load citra grayscale bebas (Pastikan file gambar ada di direktori yang sama)
     img_source = cv2.imread('source.jpg', cv2.IMREAD_GRAYSCALE)
     img_target = cv2.imread('target.jpg', cv2.IMREAD_GRAYSCALE)
@@ -68,6 +77,16 @@ def main():
 
     # 4. Implementasi Histogram Specification
     img_matched = match_histogram_library(img_source, img_target)
+
+    # ==========================================
+    # Menyimpan Citra Hasil ke Folder Output
+    # ==========================================
+    cv2.imwrite(os.path.join(output_dir, '1_source_image.jpg'), img_source)
+    cv2.imwrite(os.path.join(output_dir, '2_eq_manual.jpg'), img_eq_manual)
+    cv2.imwrite(os.path.join(output_dir, '3_eq_opencv.jpg'), img_eq_cv2)
+    cv2.imwrite(os.path.join(output_dir, '4_target_image.jpg'), img_target)
+    cv2.imwrite(os.path.join(output_dir, '5_matched_specification.jpg'), img_matched)
+    print(f"Semua citra hasil berhasil disimpan di dalam folder '{output_dir}'.")
 
     # ==========================================
     # 5. Visualisasi Seluruh Hasil dan Histogram
@@ -89,6 +108,10 @@ def main():
 
     # Baris 5: Hasil Histogram Specification
     plot_image_and_hist(img_matched, "Hasil Specification (Matched)", axes[4, 0], axes[4, 1])
+
+    # Menyimpan juga plot gabungan ke folder output
+    fig.savefig(os.path.join(output_dir, '6_plot_histogram_lengkap.png'), dpi=300)
+    print(f"Plot histogram gabungan berhasil disimpan sebagai '6_plot_histogram_lengkap.png'.")
 
     plt.show()
 
