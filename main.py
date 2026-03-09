@@ -43,14 +43,39 @@ def manual_histogram_equalization(image):
     
     return image_equalized
 
-def match_histogram_library(source_image, target_image):
+def match_histogram_manual(source_image, target_image):
     """
-    Melakukan histogram specification menggunakan library scikit-image.
+    Melakukan histogram specification (matching) secara manual.
     Menyamakan distribusi histogram source_image dengan target_image.
     """
-    # match_histograms mengembalikan citra float, kita ubah kembali ke uint8
-    matched = exposure.match_histograms(source_image, target_image)
-    return matched.astype('uint8')
+    # 1. Hitung histogram dan CDF citra sumber (Source)
+    src_hist, _ = np.histogram(source_image.flatten(), bins=256, range=[0, 256])
+    src_cdf = src_hist.cumsum()
+    src_cdf_normalized = src_cdf / src_cdf.max() # Normalisasi menjadi probabilitas [0, 1]
+
+    # 2. Hitung histogram dan CDF citra target (Target)
+    tgt_hist, _ = np.histogram(target_image.flatten(), bins=256, range=[0, 256])
+    tgt_cdf = tgt_hist.cumsum()
+    tgt_cdf_normalized = tgt_cdf / tgt_cdf.max() # Normalisasi menjadi probabilitas [0, 1]
+
+    # 3. Pembuatan Lookup Table (LUT) untuk pencocokan (Mapping)
+    # Ini sama persis dengan langkah "mencari nilai v terdekat lalu mengambil nilai z" di perhitungan manualmu
+    lut = np.zeros(256, dtype=np.uint8)
+    
+    for r in range(256):
+        # Menghitung selisih absolut antara CDF target dan CDF source pada level r
+        diff = np.abs(tgt_cdf_normalized - src_cdf_normalized[r])
+        
+        # np.argmin akan mencari indeks (level keabuan target / z) yang nilai selisihnya paling kecil (paling mendekati)
+        z_terdekat = np.argmin(diff)
+        
+        # Simpan hasil pemetaan dari r ke z
+        lut[r] = z_terdekat
+
+    # 4. Terapkan pemetaan (LUT) ke seluruh piksel pada citra sumber
+    matched_image = lut[source_image]
+    
+    return matched_image
 
 def main():
     # ==========================================
@@ -76,7 +101,7 @@ def main():
     img_eq_cv2 = cv2.equalizeHist(img_source)
 
     # 4. Implementasi Histogram Specification
-    img_matched = match_histogram_library(img_source, img_target)
+    img_matched = match_histogram_manual(img_source, img_target)
 
     # ==========================================
     # Menyimpan Citra Hasil ke Folder Output
@@ -112,8 +137,6 @@ def main():
     # Menyimpan juga plot gabungan ke folder output
     fig.savefig(os.path.join(output_dir, '6_plot_histogram_lengkap.png'), dpi=300)
     print(f"Plot histogram gabungan berhasil disimpan sebagai '6_plot_histogram_lengkap.png'.")
-
-    plt.show()
 
 if __name__ == "__main__":
     main()
